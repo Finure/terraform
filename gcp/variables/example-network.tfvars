@@ -1,0 +1,5 @@
+network_name           = "network-name"
+subnet_name            = "network-name-main"
+subnet_ip              = "10.10.10.0/24"
+ip_range_pods_name     = "network-name-pods"
+ip_range_services_name = "network-name-svc"
