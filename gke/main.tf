@@ -87,3 +87,31 @@ module "gke" {
     }
   ]
 }
+
+resource "null_resource" "patch_kubeconfig" {
+  depends_on = [module.gke]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      KUBECONFIG_PATH="$HOME/.kube/config"
+      # Optional
+      if [ -f "$KUBECONFIG_PATH" ]; then
+        echo "Removing existing kubeconfig at $KUBECONFIG_PATH"
+        rm "$KUBECONFIG_PATH"
+      fi
+
+      # Fetch GKE credentials
+      gcloud container clusters get-credentials ${var.cluster_name} --region ${var.region} --project ${var.project_id} --internal-ip
+
+      # Run IAP tunnel
+      gcloud compute ssh ${data.terraform_remote_state.iap.outputs.iap_hostname} --tunnel-through-iap --project ${var.project_id} --zone ${data.terraform_remote_state.iap.outputs.iap_zone} -- -L11001:127.0.0.1:11001 -N -q -f > /tmp/iap-tunnel.log 2>&1 &
+      disown
+
+      # Add proxy-url to context
+      CONTEXT=$(kubectl config current-context)
+      CLUSTER=$(kubectl config view -o jsonpath='{.contexts[?(@.name=="'"$CONTEXT"'")].context.cluster}')
+      kubectl config set-cluster "$CLUSTER" --proxy-url=http://127.0.0.1:11001
+      echo "Done"
+    EOT
+  }
+}
