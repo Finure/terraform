@@ -75,7 +75,7 @@ module "gke" {
   node_pools = [
     {
       name               = "default-pool"
-      node_locations     = "us-central1-c,us-central1-f"
+      node_locations     = "us-central1-c,us-central1-f,us-central1-b"
       min_count          = 1
       max_count          = 1
       auto_upgrade       = true
