@@ -1,0 +1,46 @@
+name: Checkov
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  checkov-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed folder
+        id: changes
+        run: |
+          echo "::set-output name=folder::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -v "workflows" | grep '.tf$\|.yml$' | sed 's#/[^/]*$##' | head -1)"
+
+      - name: Run Checkov
+        if: steps.changes.outputs.folder != ''
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ${{steps.changes.outputs.folder}}
+          quiet: true # display only failed checks
+          soft_fail: true # do not return an error code if there are failed checks
+          framework: all # run all infra components (terraform, kubernetes etc)
+          output_format: github_failed_only # the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
+          download_external_modules: true # download external terraform modules from public git repositories and terraform registry
+          check: HIGH
+
+      - name: Comment result on PR
+        uses: actions/github-script@v6
+        if: env.CHECKOV_RESULTS != ''
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Checkov: Issues found [Check results here](https://github.com/Finure/terraform/pull/' + context.issue.number + '/checks)'
+            })
+  
