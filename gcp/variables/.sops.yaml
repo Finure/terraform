@@ -1,0 +1,3 @@
+creation_rules:
+  - gcp_kms: projects/finure-465001/locations/global/keyRings/gcp-finure/cryptoKeys/sops-key
+    encrypted_regex: '^(.*)$'
