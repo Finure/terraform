@@ -67,8 +67,8 @@ module "gke" {
   ]
   node_pools_labels = {
     all = {
-    project     = "finure"
-    provisioned = "terraform"
+      project     = "finure"
+      provisioned = "terraform"
     }
   }
   grant_registry_access = true

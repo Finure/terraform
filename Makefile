@@ -1,8 +1,8 @@
 # Common
 MODULES = apis kms network iap gke
-TFVARS ?= ../gcp/variables/common.tfvars
-TFVARS_MODULE ?= ../gcp/variables/"$(module).tfvars"
-TFVARS_MODULE_ALL ?= ../gcp/variables/"$$module.tfvars"
+TFVARS ?= ./gcp/variables/common.tfvars
+TFVARS_MODULE ?= ./gcp/variables/"$(module).tfvars"
+TFVARS_MODULE_ALL ?= ./gcp/variables/"$$module.tfvars"
 TF_BACKEND_BUCKET ?= finure-tfstate
 TF_CMD = terraform -chdir=$(module)
 TF_CMD_ALL = terraform -chdir=$$module
@@ -16,7 +16,7 @@ endif
 
 plan:
 ifndef module
-	$(error module not set. Usage: make plan module=<module>)
+	$(error module not set. Usage: make apply module=<module>)
 endif
 	@echo "Checking if Checkov is installed"
 	@which checkov > /dev/null 2>&1 || { \
@@ -24,7 +24,10 @@ endif
 		pip install checkov || { echo 'Failed to install Checkov, install manaully and try again'; exit 1; }; \
 	}
 
-	@$(TF_CMD) plan -var-file=$(TFVARS) -var-file=$(TFVARS_MODULE) -out=tfplan.binary || { echo 'Terraform plan failed'; exit 1; }; 
+	@TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && \
+	sops -d $(TFVARS) > $(module)/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE) > $(module)/$$TFVARS_MODULE_TEMP && \
+	$(TF_CMD) plan -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP -out=tfplan.binary && \
+	rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $(module)/$$TFVARS_TEMP $(module)/$$TFVARS_MODULE_TEMP  || { echo 'Terraform plan failed'; exit 1; }
 	@echo "Converting plan to JSON for Checkov"; 
 	@$(TF_CMD) show -json tfplan.binary > $(module)/tfplan.json || { echo 'Failed to convert plan to JSON'; exit 1; }; 
 	@echo "Running Checkov on the JSON plan"; 
@@ -40,14 +43,20 @@ ifndef module
 	$(error module not set. Usage: make apply module=<module>)
 endif
 	@echo "Applying $(module)"; 
-	@$(TF_CMD) apply -var-file=$(TFVARS) -var-file=$(TFVARS_MODULE); 
+	@TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && \
+	sops -d $(TFVARS) > $(module)/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE) > $(module)/$$TFVARS_MODULE_TEMP && \
+	$(TF_CMD) apply -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP && \
+	rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $(module)/$$TFVARS_TEMP $(module)/$$TFVARS_MODULE_TEMP  || { echo 'Terraform apply failed'; exit 1; }
 
 destroy:
 ifndef module
 	$(error module not set. Usage: make destroy module=<module>)
 endif
-		echo "Destroying $(module)"; 
-		@$(TF_CMD) destroy -var-file=$(TFVARS) -var-file=$(TFVARS_MODULE); 
+	@echo "Destroying $(module)"; 
+	@TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && \
+	sops -d $(TFVARS) > $(module)/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE) > $(module)/$$TFVARS_MODULE_TEMP && \
+	$(TF_CMD) destroy -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP && \
+	rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $(module)/$$TFVARS_TEMP $(module)/$$TFVARS_MODULE_TEMP  || { echo 'Terraform destroy failed'; exit 1; }
 
 fmt:
 	@for module in $(MODULES); do \
@@ -76,8 +85,8 @@ bootstrap:
 	@for module in $(MODULES); do \
 		echo "Initializing $$module"; \
 		$(TF_CMD_ALL) init -backend-config="bucket=$(TF_BACKEND_BUCKET)" || { echo 'Init failed for $$module'; exit 1; }; \
-		echo "Planning $$module"; \
-		$(TF_CMD_ALL) plan -var-file=$(TFVARS) -var-file=$(TFVARS_MODULE_ALL) -out=tfplan.binary || { echo 'Plan failed for $$module'; exit 1; }; \
+		echo "Planning $$module "; \
+		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) plan -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP -out=tfplan.binary && rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $$module/$$TFVARS_TEMP $$module/$$TFVARS_MODULE_TEMP ; \
 		echo "Converting plan to JSON"; \
 		$(TF_CMD_ALL) show -json tfplan.binary > $$module/tfplan.json || { echo 'Show JSON failed for $$module'; exit 1; }; \
 		echo "Running Checkov on plan for $$module"; \
@@ -85,7 +94,7 @@ bootstrap:
 		echo "Checkov passed, showing plan for $$module"; \
 		$(TF_CMD_ALL) show tfplan.binary; \
 		echo "Applying $$module"; \
-		$(TF_CMD_ALL) apply -var-file=$(TFVARS) -var-file=$(TFVARS_MODULE_ALL) -auto-approve || { echo 'Apply failed for $$module'; exit 1; }; \
+		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) apply -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP --auto-approve && rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $$module/$$TFVARS_TEMP $$module/$$TFVARS_MODULE_TEMP ; \
 		echo "Cleaning up plan files"; \
 		rm -f $$module/tfplan.binary $$module/tfplan.json; \
 	done
@@ -94,7 +103,7 @@ bootstrap-destroy:
 	@echo "Destroying all modules in reverse order: $(MODULES)"
 	@for module in $$(echo $(MODULES) | awk '{ for (i=NF; i>0; i--) printf "%s ", $$i }'); do \
 		echo "Destroying $$module"; \
-		$(TF_CMD_ALL) destroy -var-file=$(TFVARS) -var-file=$(TFVARS_MODULE_ALL) -auto-approve || { echo 'Destroy failed for $$module'; exit 1; }; \
+		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) destroy -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP --auto-approve && rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $$module/$$TFVARS_TEMP $$module/$$TFVARS_MODULE_TEMP ; \
 	done
 
 help:
