@@ -1,0 +1,4 @@
+sudo apt-get update -y
+sudo apt-get install -y tinyproxy
+sudo sed -i 's/^Port 8888/Port 11001/' /etc/tinyproxy/tinyproxy.conf
+sudo systemctl restart tinyproxy

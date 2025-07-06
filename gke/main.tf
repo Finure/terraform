@@ -1,0 +1,89 @@
+terraform {
+  backend "gcs" {
+    prefix       = "gke"
+    use_lockfile = true
+  }
+}
+
+provider "google" {
+  default_labels = {
+    project     = "finure"
+    provisioned = "terraform"
+  }
+}
+
+data "terraform_remote_state" "network" {
+  backend = "gcs"
+  config = {
+    bucket = var.terraform_bucket
+    prefix = "network"
+  }
+}
+
+data "terraform_remote_state" "iap" {
+  backend = "gcs"
+  config = {
+    bucket = var.terraform_bucket
+    prefix = "iap"
+  }
+}
+
+data "terraform_remote_state" "kms" {
+  backend = "gcs"
+  config = {
+    bucket = var.terraform_bucket
+    prefix = "kms"
+  }
+}
+
+module "gke" {
+  source  = "terraform-google-modules/kubernetes-engine/google//modules/safer-cluster"
+  version = "~> 37.0"
+
+  project_id                  = var.project_id
+  name                        = var.cluster_name
+  region                      = var.region
+  zones                       = ["us-central1-c", "us-central1-b", "us-central1-f"]
+  network                     = data.terraform_remote_state.network.outputs.network_name
+  subnetwork                  = data.terraform_remote_state.network.outputs.subnets_names
+  ip_range_pods               = data.terraform_remote_state.network.outputs.subnets_secondary_ranges_name_pods
+  ip_range_services           = data.terraform_remote_state.network.outputs.subnets_secondary_ranges_name_svc
+  http_load_balancing         = true
+  horizontal_pod_autoscaling  = true
+  create_service_account      = true
+  dns_cache                   = true
+  enable_intranode_visibility = true
+  enable_private_endpoint     = true
+  deletion_protection         = false
+  master_authorized_networks = [{
+    cidr_block   = "${data.terraform_remote_state.iap.outputs.iap_ip}/32"
+    display_name = "IAP"
+  }]
+  database_encryption = [
+    {
+      "key_name" : data.terraform_remote_state.kms.outputs.kms-keys,
+      "state" : "ENCRYPTED"
+    }
+  ]
+  node_pools_labels = {
+    all = {
+    project     = "finure"
+    provisioned = "terraform"
+    }
+  }
+  grant_registry_access = true
+  node_pools = [
+    {
+      name               = "default-pool"
+      node_locations     = "us-central1-c,us-central1-f"
+      min_count          = 1
+      max_count          = 1
+      auto_upgrade       = true
+      node_metadata      = "GKE_METADATA"
+      disk_type          = "pd-standard"
+      auto_repair        = true
+      autoscaling        = true
+      initial_node_count = 0
+    }
+  ]
+}
