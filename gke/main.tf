@@ -77,7 +77,7 @@ module "gke" {
       name               = "default-pool"
       node_locations     = "us-central1-c,us-central1-f,us-central1-b"
       min_count          = 1
-      max_count          = 1
+      max_count          = 2
       auto_upgrade       = true
       node_metadata      = "GKE_METADATA"
       disk_type          = "pd-standard"
