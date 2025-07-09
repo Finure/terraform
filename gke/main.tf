@@ -55,6 +55,8 @@ module "gke" {
   enable_intranode_visibility = true
   enable_private_endpoint     = true
   deletion_protection         = false
+  initial_node_count          = 1
+  release_channel             = "UNSPECIFIED"
   master_authorized_networks = [{
     cidr_block   = "${data.terraform_remote_state.iap.outputs.iap_ip}/32"
     display_name = "IAP"
@@ -74,16 +76,17 @@ module "gke" {
   grant_registry_access = true
   node_pools = [
     {
-      name               = "default-pool"
-      node_locations     = "us-central1-c,us-central1-f,us-central1-b"
-      min_count          = 1
-      max_count          = 2
-      auto_upgrade       = true
-      node_metadata      = "GKE_METADATA"
-      disk_type          = "pd-standard"
-      auto_repair        = true
-      autoscaling        = true
-      initial_node_count = 0
+      name          = "default-pool"
+      min_count     = 1
+      max_count     = 3
+      auto_upgrade  = false
+      node_metadata = "GKE_METADATA"
+      image_type    = "COS_CONTAINERD"
+      disk_type     = "pd-standard"
+      machine_type  = "e2-standard-2"
+      disk_size_gb  = 100
+      auto_repair   = true
+      autoscaling   = true
     }
   ]
 }

@@ -6,6 +6,7 @@ TFVARS_MODULE_ALL ?= ./gcp/variables/"$$module.tfvars"
 TF_BACKEND_BUCKET ?= finure-tfstate
 TF_CMD = terraform -chdir=$(module)
 TF_CMD_ALL = terraform -chdir=$$module
+TMP_PREFIX = tmp*
 .PHONY: boostrap init plan apply destroy help fmt unlock
 
 init:
@@ -27,7 +28,7 @@ endif
 	@TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && \
 	sops -d $(TFVARS) > $(module)/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE) > $(module)/$$TFVARS_MODULE_TEMP && \
 	$(TF_CMD) plan -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP -out=tfplan.binary && \
-	rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $(module)/$$TFVARS_TEMP $(module)/$$TFVARS_MODULE_TEMP  || { echo 'Terraform plan failed'; exit 1; }
+	rm -f ${TMP_PREFIX} $(module)/${TMP_PREFIX}  || { echo 'Terraform plan failed'; exit 1; }
 	@echo "Converting plan to JSON for Checkov"; 
 	@$(TF_CMD) show -json tfplan.binary > $(module)/tfplan.json || { echo 'Failed to convert plan to JSON'; exit 1; }; 
 	@echo "Running Checkov on the JSON plan"; 
@@ -46,7 +47,7 @@ endif
 	@TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && \
 	sops -d $(TFVARS) > $(module)/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE) > $(module)/$$TFVARS_MODULE_TEMP && \
 	$(TF_CMD) apply -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP && \
-	rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $(module)/$$TFVARS_TEMP $(module)/$$TFVARS_MODULE_TEMP  || { echo 'Terraform apply failed'; exit 1; }
+	rm -f ${TMP_PREFIX} $(module)/${TMP_PREFIX} || { echo 'Terraform apply failed'; exit 1; }
 
 destroy:
 ifndef module
@@ -56,7 +57,7 @@ endif
 	@TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && \
 	sops -d $(TFVARS) > $(module)/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE) > $(module)/$$TFVARS_MODULE_TEMP && \
 	$(TF_CMD) destroy -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP && \
-	rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $(module)/$$TFVARS_TEMP $(module)/$$TFVARS_MODULE_TEMP  || { echo 'Terraform destroy failed'; exit 1; }
+	rm -f ${TMP_PREFIX} $(module)/${TMP_PREFIX} || { echo 'Terraform destroy failed'; exit 1; }
 
 fmt:
 	@for module in $(MODULES); do \
@@ -86,7 +87,7 @@ bootstrap:
 		echo "Initializing $$module"; \
 		$(TF_CMD_ALL) init -backend-config="bucket=$(TF_BACKEND_BUCKET)" || { echo 'Init failed for $$module'; exit 1; }; \
 		echo "Planning $$module "; \
-		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) plan -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP -out=tfplan.binary && rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $$module/$$TFVARS_TEMP $$module/$$TFVARS_MODULE_TEMP ; \
+		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) plan -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP -out=tfplan.binary && rm -f $(TMP_PREFIX) $$module/$(TMP_PREFIX) ; \
 		echo "Converting plan to JSON"; \
 		$(TF_CMD_ALL) show -json tfplan.binary > $$module/tfplan.json || { echo 'Show JSON failed for $$module'; exit 1; }; \
 		echo "Running Checkov on plan for $$module"; \
@@ -94,7 +95,7 @@ bootstrap:
 		echo "Checkov passed, showing plan for $$module"; \
 		$(TF_CMD_ALL) show tfplan.binary; \
 		echo "Applying $$module"; \
-		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) apply -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP --auto-approve && rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $$module/$$TFVARS_TEMP $$module/$$TFVARS_MODULE_TEMP ; \
+		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) apply -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP --auto-approve && rm -f $(TMP_PREFIX) $$module/$(TMP_PREFIX) ; \
 		echo "Cleaning up plan files"; \
 		rm -f $$module/tfplan.binary $$module/tfplan.json; \
 	done
@@ -103,7 +104,7 @@ bootstrap-destroy:
 	@echo "Destroying all modules in reverse order: $(MODULES)"
 	@for module in $$(echo $(MODULES) | awk '{ for (i=NF; i>0; i--) printf "%s ", $$i }'); do \
 		echo "Destroying $$module"; \
-		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) destroy -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP --auto-approve && rm -f $$TFVARS_TEMP $$TFVARS_MODULE_TEMP $$module/$$TFVARS_TEMP $$module/$$TFVARS_MODULE_TEMP ; \
+		TFVARS_TEMP=$$(mktemp tmp.tfvars.XXXXXX) TFVARS_MODULE_TEMP=$$(mktemp tmp-module.tfvars.XXXXXX) && sops -d $(TFVARS) > $$module/$$TFVARS_TEMP && sops -d $(TFVARS_MODULE_ALL) > $$module/$$TFVARS_MODULE_TEMP && $(TF_CMD_ALL) destroy -var-file=$$TFVARS_TEMP -var-file=$$TFVARS_MODULE_TEMP --auto-approve && rm -f $(TMP_PREFIX) $$module/$(TMP_PREFIX) ; \
 	done
 
 help:
