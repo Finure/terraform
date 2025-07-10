@@ -1,0 +1,10 @@
+loki:
+  service_accounts:
+    - account_id: loki-gcs
+      display_name: Loki GCS Writer
+      ns: logging
+      kubernetes_service_account: loki
+  storage_buckets:
+    - name: finure-loki
+      service_account_id: loki-gcs
+      role: roles/storage.objectAdmin
