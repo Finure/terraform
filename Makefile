@@ -1,5 +1,5 @@
 # Common
-MODULES = apis kms network iap gke flux
+MODULES = apis kms network iap gke flux iam
 TFVARS ?= ./gcp/variables/common.tfvars
 TFVARS_MODULE ?= ./gcp/variables/"$(module).tfvars"
 TFVARS_MODULE_ALL ?= ./gcp/variables/"$$module.tfvars"
