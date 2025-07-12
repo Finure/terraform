@@ -11,6 +11,15 @@ locals {
     ]
   ])
 
+  service_account_map = { for service_account in local.service_accounts : service_account.app => {
+    app                = service_account.app
+    account_id         = service_account.account_id
+    service_account_id = service_account.service_account_id
+    kmsops             = service_account.kmsops
+    display_name       = service_account.display_name
+    }
+  if try(service_account.kmsops, null) != null }
+
   storage_buckets = flatten([
     for app_name, app in local.apps_config :
     [

@@ -20,6 +20,14 @@ resource "google_service_account" "service-account" {
   project      = var.project_id
 }
 
+resource "google_service_account_iam_member" "workload_identity_binding" {
+  for_each           = { for service_account in local.service_accounts : "${service_account.app}:${service_account.account_id}" => service_account }
+  service_account_id = "projects/${var.project_id}/serviceAccounts/${each.value.service_account_id}"
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[${each.value.ns}/${each.value.kubernetes_service_account}]"
+  depends_on         = [google_service_account.service-account]
+}
+
 resource "google_storage_bucket_iam_member" "storage-bucket-iam-member" {
   for_each = { for storage_bucket in local.storage_buckets : "${storage_bucket.app}:${storage_bucket.name}" => storage_bucket }
 
@@ -29,10 +37,18 @@ resource "google_storage_bucket_iam_member" "storage-bucket-iam-member" {
   depends_on = [google_service_account.service-account]
 }
 
-resource "google_service_account_iam_member" "workload_identity_binding" {
-  for_each           = { for service_account in local.service_accounts : "${service_account.app}:${service_account.account_id}" => service_account }
-  service_account_id = "projects/${var.project_id}/serviceAccounts/${each.value.service_account_id}"
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[${each.value.ns}/${each.value.kubernetes_service_account}]"
-  depends_on         = [google_service_account.service-account]
+resource "google_kms_crypto_key_iam_member" "kms_key_viewer_iam_member" {
+  for_each      = { for service_account in local.service_accounts : "${service_account.app}:${service_account.account_id}" => service_account if try(service_account.kmsviewer, false) == true }
+  crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${var.kms_key_vault}"
+  role          = "roles/cloudkms.viewer"
+  member        = "serviceAccount:${each.value.service_account_id}"
+  depends_on    = [google_service_account.service-account]
+}
+
+resource "google_kms_crypto_key_iam_member" "kms_key_ops_iam_member" {
+  for_each      = local.service_account_map
+  crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${each.value.kmsops}"
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${each.value.service_account_id}"
+  depends_on    = [google_service_account.service-account]
 }

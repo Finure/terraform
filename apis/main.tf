@@ -37,5 +37,6 @@ module "enabled_google_apis" {
     "iap.googleapis.com",
     "cloudkms.googleapis.com",
     "beyondcorp.googleapis.com",
+    "certificatemanager.googleapis.com",
   ]
 }
