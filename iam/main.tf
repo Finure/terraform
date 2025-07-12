@@ -38,15 +38,15 @@ resource "google_storage_bucket_iam_member" "storage-bucket-iam-member" {
 }
 
 resource "google_kms_crypto_key_iam_member" "kms_key_viewer_iam_member" {
-  for_each      = { for service_account in local.service_accounts : "${service_account.app}:${service_account.account_id}" => service_account if try(service_account.kmsviewer, false) == true }
-  crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${var.kms_key_vault}"
+  for_each      = local.service_account_kms_viewer
+  crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${each.value.kmsviewer}"
   role          = "roles/cloudkms.viewer"
   member        = "serviceAccount:${each.value.service_account_id}"
   depends_on    = [google_service_account.service-account]
 }
 
 resource "google_kms_crypto_key_iam_member" "kms_key_ops_iam_member" {
-  for_each      = local.service_account_map
+  for_each      = local.service_account_kms_ops
   crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${each.value.kmsops}"
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${each.value.service_account_id}"

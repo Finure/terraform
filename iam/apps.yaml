@@ -14,8 +14,8 @@ vault:
       display_name: Vault SA
       ns: vault
       kubernetes_service_account: vault
-      kmsops: vault-unseal # KMS key name for kms_key_ops 
-      kmsviewer: true # KMS viewer role
+      kmsops: vault-unseal # KMS key name for kms_key_ops_iam_member 
+      kmsviewer: vault-unseal # KMS key name for kms_key_viewer_iam_member
   storage_buckets:
     - name: finure-vault
       service_account_id: vault-sa
@@ -26,4 +26,4 @@ sops:
       display_name: SOPS SA
       ns: flux-system
       kubernetes_service_account: kustomize-controller
-      kmsops: sops-key # KMS key name for kms_key_ops 
+      kmsops: sops-key # KMS key name for kms_key_ops_iam_member 

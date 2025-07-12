@@ -23,6 +23,7 @@ data "github_repository" "kubernetes" {
 resource "flux_bootstrap_git" "kubernetes" {
   depends_on = [data.github_repository.kubernetes]
 
-  embedded_manifests = true
-  path               = "clusters/finure"
+  embedded_manifests     = true
+  path                   = "clusters/finure"
+  kustomization_override = file("${path.root}/resources/flux-kustomization-patch.yaml")
 }

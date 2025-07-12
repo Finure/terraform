@@ -12,13 +12,3 @@ variable "kms_key_ring" {
   type    = string
   default = "KMS key ring name"
 }
-
-variable "kms_key_vault" {
-  type    = string
-  default = "KMS key name for vault"
-}
-
-variable "kms_key_sops" {
-  type    = string
-  default = "KMS key name for SOPS"
-}
