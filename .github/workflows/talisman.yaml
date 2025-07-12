@@ -1,0 +1,37 @@
+name: Talisman scan
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  talisman-scan:
+    runs-on: ubuntu-latest
+    name: Run Talisman to detect secrets
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Talisman
+        run: |
+          curl -sL https://github.com/thoughtworks/talisman/releases/download/v1.37.0/talisman_linux_amd64 -o talisman
+          chmod +x talisman
+          sudo mv talisman /usr/local/bin/
+
+      - name: Run Talisman scan
+        run: |
+          talisman --scan || echo "Talisman completed with findings"
+      
+      - name: Print Talisman report
+        run: |
+          echo "Detected secrets:"
+          cat talisman_report/talisman_reports/data/* || echo "No report found"
+
+      - name: Fail if Talisman found issues
+        run: |
+          if [ -d talisman_report/talisman_reports/data ]; then
+            echo "Talisman found potential secrets. Failing the build."
+            exit 1
+          fi
