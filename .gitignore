@@ -10,7 +10,7 @@ crash.log
 crash.*.log
 
 # DS_Store
-*.DS_Store.* 
+.DS_Store
 
 # Not excluding .tfvars or .tfvars.json as they're encrypted using sops and only 
 # sample files are unencrypted

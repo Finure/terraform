@@ -11,7 +11,7 @@ locals {
     ]
   ])
 
-  service_account_map = { for service_account in local.service_accounts : service_account.app => {
+  service_account_kms_ops = { for service_account in local.service_accounts : service_account.app => {
     app                = service_account.app
     account_id         = service_account.account_id
     service_account_id = service_account.service_account_id
@@ -19,6 +19,15 @@ locals {
     display_name       = service_account.display_name
     }
   if try(service_account.kmsops, null) != null }
+
+  service_account_kms_viewer = { for service_account in local.service_accounts : service_account.app => {
+    app                = service_account.app
+    account_id         = service_account.account_id
+    service_account_id = service_account.service_account_id
+    kmsviewer          = service_account.kmsviewer
+    display_name       = service_account.display_name
+    }
+  if try(service_account.kmsviewer, null) != null }
 
   storage_buckets = flatten([
     for app_name, app in local.apps_config :

@@ -25,4 +25,5 @@ resource "flux_bootstrap_git" "kubernetes" {
 
   embedded_manifests = true
   path               = "clusters/finure"
+  kustomization_override = file("${path.root}/resources/flux-kustomization-patch.yaml")
 }
