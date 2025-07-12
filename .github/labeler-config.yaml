@@ -1,0 +1,24 @@
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**/*"
+apis:
+  - changed-files:
+      - any-glob-to-any-file: "apis/**/*"
+flux:
+  - changed-files:
+      - any-glob-to-any-file: "flux/**/*"
+gke:
+  - changed-files:
+      - any-glob-to-any-file: "gke/**/*"
+iam:
+  - changed-files:
+      - any-glob-to-any-file: "iam/**/*"
+iap:
+  - changed-files:
+      - any-glob-to-any-file: "iap/**/*"
+kms:
+  - changed-files:
+      - any-glob-to-any-file: "kms/**/*"
+network:
+  - changed-files:
+      - any-glob-to-any-file: "network/**/*"
