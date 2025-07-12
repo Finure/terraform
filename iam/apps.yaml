@@ -8,3 +8,22 @@ loki:
     - name: finure-loki
       service_account_id: loki-gcs
       role: roles/storage.objectAdmin
+vault:
+  service_accounts:
+    - account_id: vault-sa
+      display_name: Vault SA
+      ns: vault
+      kubernetes_service_account: vault
+      kmsops: vault-unseal # KMS key name for kms_key_ops 
+      kmsviewer: true # KMS viewer role
+  storage_buckets:
+    - name: finure-vault
+      service_account_id: vault-sa
+      role: roles/storage.objectAdmin
+sops:
+  service_accounts:
+    - account_id: sops-sa
+      display_name: SOPS SA
+      ns: flux-system
+      kubernetes_service_account: kustomize-controller
+      kmsops: sops-key # KMS key name for kms_key_ops 
