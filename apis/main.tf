@@ -8,7 +8,7 @@ terraform {
 provider "google" {
   default_labels = {
     project     = "finure"
-    provisioned = "terraform1"
+    provisioned = "terraform"
   }
 }
 
