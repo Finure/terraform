@@ -27,3 +27,9 @@ sops:
       ns: flux-system
       kubernetes_service_account: kustomize-controller
       kmsops: sops-key # KMS key name for kms_key_ops_iam_member 
+atlantis:
+  service_accounts:
+    - account_id: atlantis
+      display_name: Atlantis SA
+      ns: tools
+      kubernetes_service_account: atlantis
