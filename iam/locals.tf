@@ -42,5 +42,38 @@ locals {
       )
     ]
   ])
+  bigquery_datasets = flatten([
+    for app_name, app in local.apps_config : [
+      for bq in try(app.bigquery, []) : merge(
+        bq,
+        {
+          app = app_name
+          service_account_id = (
+            length(regexall("@", bq.service_account_id)) > 0 ?
+            bq.service_account_id :
+            "${bq.service_account_id}@${var.project_id}.iam.gserviceaccount.com"
+          )
+        }
+      )
+    ]
+  ])
+  compute_accounts = flatten([
+    for app_name, app in local.apps_config :
+    [
+      for compute in try(app.compute, []) : merge(compute, {
+        app                = app_name
+        service_account_id = length(regexall(".*@.*", try(compute.account_id, ""))) > 0 ? try(compute.account_id, "") : "${try(compute.account_id, "")}@${var.project_id}.iam.gserviceaccount.com"
+      })
+    ]
+  ])
 
+  bigquery_job_users = flatten([
+    for app_name, app in local.apps_config :
+    [
+      for bigquery in try(app.bigqueryProject, []) : merge(bigquery, {
+        app                = app_name
+        service_account_id = length(regexall(".*@.*", try(bigquery.account_id, ""))) > 0 ? try(bigquery.account_id, "") : "${try(bigquery.account_id, "")}@${var.project_id}.iam.gserviceaccount.com"
+      })
+    ]
+  ])
 }
