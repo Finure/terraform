@@ -33,3 +33,30 @@ atlantis:
       display_name: Atlantis SA
       ns: tools
       kubernetes_service_account: atlantis
+argo:
+  service_accounts:
+    - account_id: argo-workflows
+      display_name: Argo Workflows SA
+      ns: tools
+      kubernetes_service_account: argo
+  storage_buckets:
+    - name: finure-argo
+      service_account_id: argo-workflows
+      role: roles/storage.objectAdmin
+opencost:
+  service_accounts:
+    - account_id: opencost
+      display_name: OpenCost SA
+      ns: tools
+      kubernetes_service_account: opencost
+  bigquery:
+    - name: billing_data
+      service_account_id: opencost
+      role: roles/bigquery.dataViewer
+    - name: billing_data
+      service_account_id: opencost
+      role: roles/bigquery.user
+  compute:
+    - account_id: opencost
+  bigqueryProject:
+    - account_id: opencost

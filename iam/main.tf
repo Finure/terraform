@@ -52,3 +52,31 @@ resource "google_kms_crypto_key_iam_member" "kms_key_ops_iam_member" {
   member        = "serviceAccount:${each.value.service_account_id}"
   depends_on    = [google_service_account.service-account]
 }
+
+resource "google_bigquery_dataset_iam_member" "bq_dataset_iam_member" {
+  for_each = {
+    for bq in local.bigquery_datasets :
+    "${bq.app}:${bq.name}:${bq.role}:${bq.service_account_id}" => bq
+  }
+  project    = var.project_id
+  dataset_id = each.value.name
+  role       = each.value.role
+  member     = "serviceAccount:${each.value.service_account_id}"
+  depends_on = [google_service_account.service-account]
+}
+
+resource "google_project_iam_member" "compute_viewer" {
+  for_each   = { for compute_account in local.compute_accounts : "${compute_account.app}:${compute_account.account_id}" => compute_account }
+  project    = var.project_id
+  role       = "roles/compute.viewer"
+  member     = "serviceAccount:${each.value.service_account_id}"
+  depends_on = [google_service_account.service-account]
+}
+
+resource "google_project_iam_member" "bq_job_user" {
+  for_each   = { for bigquery_job_user in local.bigquery_job_users : "${bigquery_job_user.app}:${bigquery_job_user.account_id}" => bigquery_job_user }
+  project    = var.project_id
+  role       = "roles/bigquery.jobUser"
+  member     = "serviceAccount:${each.value.service_account_id}"
+  depends_on = [google_service_account.service-account]
+}
