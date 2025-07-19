@@ -84,7 +84,7 @@ module "gke" {
       image_type    = "COS_CONTAINERD"
       disk_type     = "pd-standard"
       machine_type  = "e2-standard-2"
-      disk_size_gb  = 100
+      disk_size_gb  = 20
       auto_repair   = true
       autoscaling   = true
     }
