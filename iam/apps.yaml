@@ -60,3 +60,13 @@ opencost:
     - account_id: opencost
   bigqueryProject:
     - account_id: opencost
+cnpg:
+  service_accounts:
+    - account_id: cnpg-cluster
+      display_name: Cloudnative-PG
+      ns: cnpg-database
+      kubernetes_service_account: cnpg-cluster
+  storage_buckets:
+    - name: finure-cnpg
+      service_account_id: cnpg-cluster
+      role: roles/storage.objectAdmin
