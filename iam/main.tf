@@ -73,6 +73,22 @@ resource "google_project_iam_member" "compute_viewer" {
   depends_on = [google_service_account.service-account]
 }
 
+resource "google_project_iam_member" "iam_admin" {
+  for_each   = { for iam_account in local.iam_accounts : "${iam_account.app}:${iam_account.account_id}" => iam_account }
+  project    = var.project_id
+  role       = "roles/resourcemanager.projectIamAdmin"
+  member     = "serviceAccount:${each.value.service_account_id}"
+  depends_on = [google_service_account.service-account]
+}
+
+resource "google_project_iam_member" "service_account_admin" {
+  for_each   = { for iam_account in local.iam_accounts : "${iam_account.app}:${iam_account.account_id}" => iam_account }
+  project    = var.project_id
+  role       = "roles/iam.serviceAccountAdmin"
+  member     = "serviceAccount:${each.value.service_account_id}"
+  depends_on = [google_service_account.service-account]
+}
+
 resource "google_project_iam_member" "bq_job_user" {
   for_each   = { for bigquery_job_user in local.bigquery_job_users : "${bigquery_job_user.app}:${bigquery_job_user.account_id}" => bigquery_job_user }
   project    = var.project_id

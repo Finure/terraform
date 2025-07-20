@@ -33,6 +33,12 @@ atlantis:
       display_name: Atlantis SA
       ns: tools
       kubernetes_service_account: atlantis
+  storage_buckets:
+    - name: finure-tfstate
+      service_account_id: atlantis
+      role: roles/storage.objectAdmin
+  iam:
+    - account_id: atlantis
 argo:
   service_accounts:
     - account_id: argo-workflows
