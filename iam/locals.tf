@@ -10,20 +10,20 @@ locals {
       })
     ]
   ])
-  
+
   raw_kms_accounts = flatten([
     for app_name, app in local.apps_config : [
       for project in try(app.service_accounts, []) : [
         for role_string in try(project.kmsroles, []) : merge(project, {
-          app                = app_name
-          role               = length(split(":", role_string)) == 2 ? split(":", role_string)[0] : ""
-          kms_key            = length(split(":", role_string)) == 2 ? split(":", role_string)[1] : ""
+          app     = app_name
+          role    = length(split(":", role_string)) == 2 ? split(":", role_string)[0] : ""
+          kms_key = length(split(":", role_string)) == 2 ? split(":", role_string)[1] : ""
           service_account_id = (
             length(regexall(".*@.*", try(project.account_id, ""))) > 0
-              ? try(project.account_id, "")
-              : "${try(project.account_id, "")}@${var.project_id}.iam.gserviceaccount.com"
+            ? try(project.account_id, "")
+            : "${try(project.account_id, "")}@${var.project_id}.iam.gserviceaccount.com"
           )
-          account_id         = project.account_id 
+          account_id = project.account_id
         })
       ]
     ]
@@ -68,12 +68,12 @@ locals {
     for app_name, app in local.apps_config : [
       for project in try(app.service_accounts, []) : [
         for role in try(project.roles, []) : merge(project, {
-          app                = app_name
-          role               = role
+          app  = app_name
+          role = role
           service_account_id = (
             length(regexall(".*@.*", try(project.account_id, ""))) > 0
-              ? try(project.account_id, "")
-              : "${try(project.account_id, "")}@${var.project_id}.iam.gserviceaccount.com"
+            ? try(project.account_id, "")
+            : "${try(project.account_id, "")}@${var.project_id}.iam.gserviceaccount.com"
           )
         })
       ]
