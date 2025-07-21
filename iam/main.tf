@@ -37,18 +37,13 @@ resource "google_storage_bucket_iam_member" "storage-bucket-iam-member" {
   depends_on = [google_service_account.service-account]
 }
 
-resource "google_kms_crypto_key_iam_member" "kms_key_viewer_iam_member" {
-  for_each      = local.service_account_kms_viewer
-  crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${each.value.kmsviewer}"
-  role          = "roles/cloudkms.viewer"
-  member        = "serviceAccount:${each.value.service_account_id}"
-  depends_on    = [google_service_account.service-account]
-}
-
-resource "google_kms_crypto_key_iam_member" "kms_key_ops_iam_member" {
-  for_each      = local.service_account_kms_ops
-  crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${each.value.kmsops}"
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+resource "google_kms_crypto_key_iam_member" "kms_key_iam_member" {
+  for_each = {
+    for acct in local.kms_accounts :
+    "${acct.app}:${acct.account_id}:${acct.role}:${acct.kms_key}" => acct
+  }
+  crypto_key_id = "projects/${var.project_id}/locations/global/keyRings/${var.kms_key_ring}/cryptoKeys/${each.value.kms_key}"
+  role          = each.value.role
   member        = "serviceAccount:${each.value.service_account_id}"
   depends_on    = [google_service_account.service-account]
 }
@@ -65,34 +60,14 @@ resource "google_bigquery_dataset_iam_member" "bq_dataset_iam_member" {
   depends_on = [google_service_account.service-account]
 }
 
-resource "google_project_iam_member" "compute_viewer" {
-  for_each   = { for compute_account in local.compute_accounts : "${compute_account.app}:${compute_account.account_id}" => compute_account }
-  project    = var.project_id
-  role       = "roles/compute.viewer"
-  member     = "serviceAccount:${each.value.service_account_id}"
-  depends_on = [google_service_account.service-account]
-}
+resource "google_project_iam_member" "project" {
+  for_each = {
+    for project_account in local.project_accounts :
+    "${project_account.app}:${project_account.account_id}:${project_account.role}" => project_account
+  }
 
-resource "google_project_iam_member" "iam_admin" {
-  for_each   = { for iam_account in local.iam_accounts : "${iam_account.app}:${iam_account.account_id}" => iam_account }
   project    = var.project_id
-  role       = "roles/resourcemanager.projectIamAdmin"
-  member     = "serviceAccount:${each.value.service_account_id}"
-  depends_on = [google_service_account.service-account]
-}
-
-resource "google_project_iam_member" "service_account_admin" {
-  for_each   = { for iam_account in local.iam_accounts : "${iam_account.app}:${iam_account.account_id}" => iam_account }
-  project    = var.project_id
-  role       = "roles/iam.serviceAccountAdmin"
-  member     = "serviceAccount:${each.value.service_account_id}"
-  depends_on = [google_service_account.service-account]
-}
-
-resource "google_project_iam_member" "bq_job_user" {
-  for_each   = { for bigquery_job_user in local.bigquery_job_users : "${bigquery_job_user.app}:${bigquery_job_user.account_id}" => bigquery_job_user }
-  project    = var.project_id
-  role       = "roles/bigquery.jobUser"
+  role       = each.value.role
   member     = "serviceAccount:${each.value.service_account_id}"
   depends_on = [google_service_account.service-account]
 }

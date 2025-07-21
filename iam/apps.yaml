@@ -14,8 +14,9 @@ vault:
       display_name: Vault SA
       ns: vault
       kubernetes_service_account: vault
-      kmsops: vault-unseal # KMS key name for kms_key_ops_iam_member 
-      kmsviewer: vault-unseal # KMS key name for kms_key_viewer_iam_member
+      kmsroles:
+      - "roles/cloudkms.cryptoKeyEncrypterDecrypter:vault-unseal" # role:kms-key
+      - "roles/cloudkms.viewer:vault-unseal"
   storage_buckets:
     - name: finure-vault
       service_account_id: vault-sa
@@ -26,19 +27,21 @@ sops:
       display_name: SOPS SA
       ns: flux-system
       kubernetes_service_account: kustomize-controller
-      kmsops: sops-key # KMS key name for kms_key_ops_iam_member 
+      kmsroles:
+      - "roles/cloudkms.cryptoKeyEncrypterDecrypter:sops-key" # role:kms-key
 atlantis:
   service_accounts:
     - account_id: atlantis
       display_name: Atlantis SA
       ns: tools
       kubernetes_service_account: atlantis
+      roles:
+       - "roles/resourcemanager.projectIamAdmin"
+       - "roles/iam.serviceAccountAdmin"
   storage_buckets:
     - name: finure-tfstate
       service_account_id: atlantis
       role: roles/storage.objectAdmin
-  iam:
-    - account_id: atlantis
 argo:
   service_accounts:
     - account_id: argo-workflows
@@ -55,6 +58,9 @@ opencost:
       display_name: OpenCost SA
       ns: tools
       kubernetes_service_account: opencost
+      roles:
+       - "roles/compute.viewer"
+       - "roles/bigquery.jobUser"
   bigquery:
     - name: billing_data
       service_account_id: opencost
@@ -62,10 +68,6 @@ opencost:
     - name: billing_data
       service_account_id: opencost
       role: roles/bigquery.user
-  compute:
-    - account_id: opencost
-  bigqueryProject:
-    - account_id: opencost
 cnpg:
   service_accounts:
     - account_id: cnpg-cluster
