@@ -2,7 +2,7 @@ loki:
   service_accounts:
     - account_id: loki-gcs
       display_name: Loki GCS Writer
-      ns: logging
+      ns: monitoring
       kubernetes_service_account: loki
   storage_buckets:
     - name: finure-loki

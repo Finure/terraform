@@ -43,7 +43,7 @@ module "gke" {
   project_id                  = var.project_id
   name                        = var.cluster_name
   region                      = var.region
-  zones                       = ["us-central1-c", "us-central1-b", "us-central1-f"]
+  zones                       = ["us-central1-a", "us-central1-b", "us-central1-f"]
   network                     = data.terraform_remote_state.network.outputs.network_name
   subnetwork                  = data.terraform_remote_state.network.outputs.subnets_names
   ip_range_pods               = data.terraform_remote_state.network.outputs.subnets_secondary_ranges_name_pods
@@ -76,15 +76,15 @@ module "gke" {
   grant_registry_access = true
   node_pools = [
     {
-      name          = "default-pool"
+      name          = "default"
       min_count     = 1
       max_count     = 3
       auto_upgrade  = false
       node_metadata = "GKE_METADATA"
       image_type    = "COS_CONTAINERD"
       disk_type     = "pd-standard"
-      machine_type  = "e2-standard-2"
-      disk_size_gb  = 20
+      machine_type  = "e2-highmem-2"
+      disk_size_gb  = 100
       auto_repair   = true
       autoscaling   = true
     }
