@@ -38,6 +38,7 @@ atlantis:
       roles:
        - "roles/resourcemanager.projectIamAdmin"
        - "roles/iam.serviceAccountAdmin"
+       - "roles/storage.admin"
   storage_buckets:
     - name: finure-tfstate
       service_account_id: atlantis
@@ -77,14 +78,4 @@ cnpg:
   storage_buckets:
     - name: finure-cnpg
       service_account_id: cnpg-cluster
-      role: roles/storage.objectAdmin
-airflow:
-  service_accounts:
-    - account_id: airflow
-      display_name: Airflow SA
-      ns: airflow
-      kubernetes_service_account: airflow
-  storage_buckets:
-    - name: finure-airflow
-      service_account_id: airflow
       role: roles/storage.objectAdmin
