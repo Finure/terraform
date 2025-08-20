@@ -43,16 +43,6 @@ atlantis:
     - name: finure-tfstate
       service_account_id: atlantis
       role: roles/storage.objectAdmin
-argo:
-  service_accounts:
-    - account_id: argo-workflows
-      display_name: Argo Workflows SA
-      ns: tools
-      kubernetes_service_account: argo
-  storage_buckets:
-    - name: finure-argo
-      service_account_id: argo-workflows
-      role: roles/storage.objectAdmin
 opencost:
   service_accounts:
     - account_id: opencost
